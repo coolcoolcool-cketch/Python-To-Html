@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python → HTML Генератор</title>
+    <title>Python → HTML Генератор с print()</title>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
     <style>
         body { font-family: Arial; padding: 20px; }
@@ -12,9 +12,12 @@
     </style>
 </head>
 <body>
-    <h1>Python → HTML Генератор</h1>
-    <p>Напиши Python-код, присвой HTML строке переменной <code>html</code>:</p>
-    <textarea id="pythonCode">html = "&lt;h1&gt;Привет, мир!&lt;/h1&gt;"</textarea><br>
+    <h1>Python → HTML Генератор с print()</h1>
+    <p>Теперь можно использовать <code>print()</code> для вывода HTML прямо в браузер:</p>
+    <textarea id="pythonCode">
+print("<h1>Hello!</h1>")
+print("<p>Это HTML из Python</p>")
+    </textarea><br>
     <button onclick="runPython()">Сгенерировать HTML</button>
 
     <h2>Результат:</h2>
@@ -22,16 +25,26 @@
 
     <script>
         async function runPython() {
-            // Загружаем Pyodide (если ещё не загружен)
             if (!window.pyodide) {
                 window.pyodide = await loadPyodide();
             }
 
             let code = document.getElementById("pythonCode").value;
 
+            // Перенаправляем print в переменную html
+            let wrappedCode = `
+html_output = ""
+import builtins
+def print(text="", *args, **kwargs):
+    global html_output
+    builtins.print(text, *args, **kwargs)  # для консоли Pyodide
+    html_output += str(text) + "\\n"
+` + code + `
+`;
+
             try {
-                await pyodide.runPythonAsync(code);
-                let html = pyodide.globals.get("html");
+                await pyodide.runPythonAsync(wrappedCode);
+                let html = pyodide.globals.get("html_output");
                 document.getElementById("output").srcdoc = html;
             } catch (err) {
                 document.getElementById("output").srcdoc = "<p style='color:red;'>Ошибка: " + err + "</p>";
